@@ -53,40 +53,36 @@ d3.json(geoData).then(function(data) {
             <h3>Depth: ${geojson[i].geometry.coordinates[2]}</h3>`).addTo(myMap)   
         };
 
+    });
+
     // Set up legend
     let legend = L.control({position: "bottomright"});
 
-    function getColor(value) {
-        if (value == '-10-10')
-            return "#80ff00";
-        else if (value == '10-30')
-            return "#bfff00";
-        else if (value == '30-50')
-            return "#ffff00";
-        else if (value == '50-70')
-            return "#ffbf00";
-        else if (value == '70-90')
-            return "#ff8000";
-        else 
-            return "#ff4000";
+function getColor(value) {
+    return  value > 90 ? "#ff4000" :
+            value > 70 ? "#ff8000" :
+            value > 50 ? "#ffbf00" :
+            value > 30 ? "#ffff00" :
+            value > 10 ? "#bfff00" :
+            value > -10 ? "#80ff00" :
+                       "#80ff00"; 
+}
+    
+legend.onAdd = function () {
 
-    };
-    legend.onAdd = function(myMap) {
-        let div = L.DomUtil.create('div', 'info legend');
-        let categories = ['-10-10','10-30','30-50','50-70','70-90','90+'];
-        let labels = [];
-
-    for (let i = 0; i < categories.length; i++) {
-        div.innerHTML +=
-        labels.push(
-            '<i class="square" style="background:' + getColor(categories[i]) + '"></i> ' +
-            categories[i] + '');
+    let div = L.DomUtil.create('div', 'info legend');
+        categories = [-10, 10, 30, 50, 70, 90];
         
-    };
-    div.innerHTML = labels.join('<br>');
-
-    return div;
-};
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (let i = 0; i < categories.length; i++) {
+            div.innerHTML +=
+                '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
+                (categories[i] ? categories[i]  + '<br>' : '+');
+            }
+        
+            return div;
+        };
+    
 
 legend.addTo(myMap);
-});
+

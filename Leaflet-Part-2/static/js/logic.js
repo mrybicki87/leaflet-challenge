@@ -1,24 +1,49 @@
+function createMap(earthquakes) {
+// Add the tile layers for the background of the map
+let satView = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}', {
+	attribution: '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	ext: 'jpg'
+});
+
+let grayscale = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+	attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+});
+
+let outdoor = L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}', {
+	attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	ext: 'png'
+});
+
+// Create the baseMaps object
+let baseMaps = {
+    'Satellite': satView,
+    'Grayscale': grayscale,
+    'Outdoors': outdoor
+};
+
+// Create the overlayMaps object
+let overlayMaps = {
+    'Earthquakes': earthquakes
+};
+
 // Create map object
 let myMap = L.map("map", {
     center: [39.742043, -104.991531],
-    zoom: 5.2
+    zoom: 5.2,
+    layers: [satView, earthquakes]
   });
 
-// Add the tile layer
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(myMap);
+  // Create a layer control
+  let layerControl = L.control.layers(baseMaps, overlayMaps, {
+    collapsed: false
+  }).addTo(myMap);
+}
 
-// Load GeoJSON data
-let geoData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
+function createMarkers(response) {
+    let geojson = response.features;
 
+    let earthquakes = [];
 
-// Get the data d3
-d3.json(geoData).then(function(data) {
-    let geojson = data.features;
-    console.log(data)
-
-    // Loop through geoData
     for (let i = 0; i < geojson.length; i++) {
         let color = "";
         // Conditionals for earthquake depth, geometry.coordinates[2]
@@ -41,8 +66,7 @@ d3.json(geoData).then(function(data) {
             color = "#ff4000";
         }
 
-        // Add Circles to the map
-        L.circle([geojson[i].geometry.coordinates[1], geojson[i].geometry.coordinates[0]], {
+        let earthquake = L.circle([geojson[i].geometry.coordinates[1], geojson[i].geometry.coordinates[0]], {
             fillOpacity: 0.75,
             color: 'black',
             fillColor: color,
@@ -50,43 +74,20 @@ d3.json(geoData).then(function(data) {
             radius: geojson[i].properties.mag * 15000
         }).bindPopup(`<h1>${geojson[i].properties.place}</h1> <hr>
             <h3>Magnitude: ${geojson[i].properties.mag}</h3>
-            <h3>Depth: ${geojson[i].geometry.coordinates[2]}</h3>`).addTo(myMap)   
-        };
+            <h3>Depth: ${geojson[i].geometry.coordinates[2]}</h3>`);
+            
+            earthquakes.push(earthquake)
+        }
+        createMap(L.layerGroup(earthquakes));
 
-    // Set up legend
-    let legend = L.control({position: "bottomright"});
+}
 
-    function getColor(value) {
-        if (value == '-10-10')
-            return "#80ff00";
-        else if (value == '10-30')
-            return "#bfff00";
-        else if (value == '30-50')
-            return "#ffff00";
-        else if (value == '50-70')
-            return "#ffbf00";
-        else if (value == '70-90')
-            return "#ff8000";
-        else 
-            return "#ff4000";
 
-    };
-    legend.onAdd = function(myMap) {
-        let div = L.DomUtil.create('div', 'info legend');
-        let categories = ['-10-10','10-30','30-50','50-70','70-90','90+'];
-        let labels = [];
 
-    for (let i = 0; i < categories.length; i++) {
-        div.innerHTML +=
-        labels.push(
-            '<i class="square" style="background:' + getColor(categories[i]) + '"></i> ' +
-            categories[i] + '');
-        
-    };
-    div.innerHTML = labels.join('<br>');
 
-    return div;
-};
 
-legend.addTo(myMap);
-});
+
+d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson").then(createMarkers);
+
+
+
