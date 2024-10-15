@@ -1,24 +1,25 @@
 function createMap(earthquakes) {
 // Add the tile layers for the background of the map
-let satView = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}', {
-	attribution: '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-	ext: 'jpg'
+// Old map tiles stopped working, found links to google layers on stack overflow https://stackoverflow.com/questions/9394190/leaflet-map-api-with-google-satellite-layer
+let satView = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
 });
 
 let grayscale = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
 	attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
 });
 
-let outdoor = L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}', {
-	attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-	ext: 'png'
+let terrain = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
 });
 
 // Create the baseMaps object
 let baseMaps = {
     'Satellite': satView,
     'Grayscale': grayscale,
-    'Outdoors': outdoor
+    'Terrain': terrain
 };
 
 // Create the overlayMaps object
@@ -37,6 +38,41 @@ let myMap = L.map("map", {
   let layerControl = L.control.layers(baseMaps, overlayMaps, {
     collapsed: false
   }).addTo(myMap);
+
+  let legend = L.control({position: "bottomright"});
+
+function getColor(value) {
+    return  value > 90 ? "#ff4000" :
+            value > 70 ? "#ff8000" :
+            value > 50 ? "#ffbf00" :
+            value > 30 ? "#ffff00" :
+            value > 10 ? "#bfff00" :
+            value > -10 ? "#80ff00" :
+                       "#80ff00"; 
+}
+    
+legend.onAdd = function () {
+
+    let div = L.DomUtil.create('div', 'info legend');
+        categories = [-10, 10, 30, 50, 70, 90];
+        
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (let i = 0; i < categories.length; i++) {
+            if (categories[i] < 90) {
+                div.innerHTML +=
+                    '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
+                    (categories[i] ? categories[i] + ' - ' + categories[i+1] + '<br>' : '+');  
+            }
+            else {
+                div.innerHTML +=
+                    '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
+                    (categories[i] ? categories[i] + ' + ' + '<br>' : '+');
+            }
+        };
+        return div;
+
+    };
+legend.addTo(myMap);
 }
 
 function createMarkers(response) {
@@ -82,12 +118,4 @@ function createMarkers(response) {
 
 }
 
-
-
-
-
-
 d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson").then(createMarkers);
-
-
-

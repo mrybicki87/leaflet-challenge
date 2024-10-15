@@ -12,7 +12,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Load GeoJSON data
 let geoData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
-
 // Get the data d3
 d3.json(geoData).then(function(data) {
     let geojson = data.features;
@@ -54,7 +53,7 @@ d3.json(geoData).then(function(data) {
         };
 
     });
-
+ 
     // Set up legend
     let legend = L.control({position: "bottomright"});
 
@@ -75,14 +74,19 @@ legend.onAdd = function () {
         
         // loop through our density intervals and generate a label with a colored square for each interval
         for (let i = 0; i < categories.length; i++) {
-            div.innerHTML +=
-                '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
-                (categories[i] ? categories[i]  + '<br>' : '+');
+            if (categories[i] < 90) {
+                div.innerHTML +=
+                    '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
+                    (categories[i] ? categories[i] + ' - ' + categories[i+1] + '<br>' : '+');  
             }
-        
-            return div;
+            else {
+                div.innerHTML +=
+                    '<i class = "circle" style="background:' + getColor(categories[i]+1) + '"></i> ' +
+                    (categories[i] ? categories[i] + ' + ' + '<br>' : '+');
+            }
         };
-    
+        return div;
 
+    };
 legend.addTo(myMap);
 
